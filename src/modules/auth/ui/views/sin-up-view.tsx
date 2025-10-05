@@ -37,7 +37,7 @@ export default function SignUpView() {
   const [showPwd, setShowPwd] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
+  
   const form = useForm<SignUpValues>({
     resolver: zodResolver(SignUpSchema),
     defaultValues: { name: "", email: "", password: "", confirmPassword: "" },
@@ -60,7 +60,7 @@ export default function SignUpView() {
       }
 
       // After sign-up, send them to sign-in or dashboard; your choice:
-      router.push("/sign-in");
+      router.push("/");
     } catch (err: any) {
       setError(err?.message || "Sign up failed. Please try again.");
     } finally {

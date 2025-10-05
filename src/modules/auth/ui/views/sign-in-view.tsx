@@ -37,23 +37,28 @@ export default function SignInView() {
     console.log("Submitting", data);
     setLoading(true);
     
-  //   authClient.signIn.email({email: data.email, password: data.password},
-  //     {
-  //   onSuccess: () => router.push("/home"),
-  //   onError: (error) => console.error("Sign-in error:", error),
-  // }
-  //   );
+    authClient.signIn.email(
+      {
+        email: data.email,
+        password: data.password,
+        callbackURL: "/"
+      },
+      {
+    onSuccess: () => router.push("/"),
+    onError: (error) => console.error("Sign-in error:", error),
+  }
+    );
 
-    try {
-      // Replace with your real auth logic
-      await new Promise((r) => setTimeout(r, 1000));
-      console.log("Signed in:", data);
-      router.push("/sign-up");
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
+    // try {
+    //   // Replace with your real auth logic
+    //   await new Promise((r) => setTimeout(r, 1000));
+    //   console.log("Signed in:", data);
+    //   router.push("/sign-up");
+    // } catch (err) {
+    //   console.error(err);
+    // } finally {
+    //   setLoading(false);
+    // }
   };
 
   return (

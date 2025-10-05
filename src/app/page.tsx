@@ -1,17 +1,17 @@
-import { Button } from "@/components/ui/button";
-import Image from "next/image";
+import { auth } from "@/lib/auth";
+import { HomeView } from "@/modules/home/ui/views/home-view"
+import { redirect } from "next/navigation";
+import { headers } from "next/headers";
 
-export default function Home() {
-  return (
-    <div>
-      <h1 className="text-4xl font-bold text-center mt-10">Welcome to Amplithink AI</h1>
-      <h1 className="text-3xl text-center font-bold text-red-500">Welcome back</h1>
-
-      <Button>
-        Sign In
-      </Button>
-    </div>
-   
-
-  );
+const Page = async() => {
+  const session = await auth.api.getSession({
+    headers: await headers(),
+  }); // Implement your session retrieval logic here
+    
+  
+  //if(!session)  redirect("/sign-in");
+  
+  return <HomeView />
 }
+
+export default Page
