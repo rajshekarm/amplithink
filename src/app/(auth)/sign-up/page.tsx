@@ -1,5 +1,5 @@
 
-import SignUpView from "@/app/modules/auth/ui/views/sin-up-view";
+import SignUpView from "@/modules/auth/ui/views/sin-up-view";
 
 const Page = () => {
     return <SignUpView/>
