@@ -47,13 +47,15 @@ export default function SignUpView() {
   async function onSubmit(values: SignUpValues) {
     setError(null);
     setLoading(true);
+    
     try {
+      
       const res = await authClient.signUp.email({
         name: values.name,
         email: values.email,
         password: values.password,
       });
-
+      console.log("Submitting", values);
       if (res.error) {
         setError(res.error.message || "Could not create account");
         return;

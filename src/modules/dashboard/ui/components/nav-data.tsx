@@ -7,12 +7,12 @@ export type NavItem = {
 };
 
 export const primaryNav: NavItem[] = [
-  { icon: VideoIcon, label: "Meetings", href: "/dashboard/meetings" },
-  { icon: BotIcon, label: "Agents", href: "/dashboard/agents" },
-  { icon: StarIcon, label: "Prompts", href: "/dashboard/prompts" },
+  { icon: VideoIcon, label: "Meetings", href: "/meetings" },
+  { icon: BotIcon, label: "Agents", href: "/agents" },
+  { icon: StarIcon, label: "Prompts", href: "/prompts" },
 ];
 
 export const secondaryNav: NavItem[] = [
-  { icon: Users2, label: "Candidates", href: "/dashboard/candidates" },
-  { icon: Settings, label: "Settings", href: "/dashboard/settings" },
+  { icon: Users2, label: "Candidates", href: "/candidates" },
+  { icon: Settings, label: "Settings", href: "/settings" },
 ];

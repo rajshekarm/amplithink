@@ -14,9 +14,6 @@ export const  HomeView =() => {
         <h1 className="text-4xl font-bold text-center mt-10">Welcome to Amplithink AI</h1>
         <h1 className="text-3xl text-center font-bold text-red-500">Please sign in to continue</h1>
       </div>  
-
-
-
     )
   }
   return (
@@ -27,7 +24,6 @@ export const  HomeView =() => {
       </div>
 
 
-      
       <div className="flex flex-col items-center justify-center">
         <Image
           src="/amplithinkai-logo.png"
