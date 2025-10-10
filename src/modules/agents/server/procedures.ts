@@ -2,7 +2,8 @@ import { db } from "@/db";
 import { agents } from "@/db/schema";
 import { and, desc, eq } from "drizzle-orm";
 import { z } from "zod";
-import { createTRPCRouter, baseProcedure } from "@/trpc/init";
+import { createTRPCRouter, baseProcedure, protectedProcedure } from "@/trpc/init";
+import { agentsInsertSchema } from "../schemas";
 
 const CreateAgentInput = z.object({
   name: z.string().min(2),
@@ -33,6 +34,21 @@ export const agentsRouter = createTRPCRouter({
     return data;
   }),
 
+
+  getOne: baseProcedure
+    .input(
+      z.object({
+        id: z.string(),
+      })
+    )
+    .query(async ({ input }) => {
+      const [existingAgent] = await db
+        .select()
+        .from(agents)
+        .where(eq(agents.id, input.id));
+
+      return existingAgent;
+    }),
 //   // Safer list for the current user (use if you added userId)
 //   listMine: protectedProcedure.query(async ({ ctx }) => {
 //     const data = await db
@@ -74,6 +90,37 @@ export const agentsRouter = createTRPCRouter({
 //       return row;
 //     }),
 
+
+
+create: protectedProcedure
+  .input(agentsInsertSchema)
+  .mutation(async ({ input, ctx }) => {
+    const [createdAgent] = await db
+      .insert(agents)
+      .values({
+        ...input,
+        userId: ctx.session.user.id,
+        
+        slug: "rajashekar"
+          .toLowerCase()
+          .replace(/[^a-z0-9]+/g, "-")  ,
+      })
+      .returning();
+
+    return createdAgent;
+  }),
+
+
+
+
+
+
+
+
+
+
+
+
 //   update: protectedProcedure
 //     .input(UpdateAgentInput)
 //     .mutation(async ({ ctx, input }) => {
@@ -103,6 +150,40 @@ export const agentsRouter = createTRPCRouter({
 //       return row ?? null;
 //     }),
 
+
+
+
+
+
+
+// UPDATE
+  update: protectedProcedure
+    .input(
+      agentsInsertSchema.extend({
+        id: z.string().uuid(),
+      })
+    )
+    .mutation(async ({ input, ctx }) => {
+      const { id, ...data } = input;
+
+      const [updatedAgent] = await db
+        .update(agents)
+        .set({
+          ...data,
+          slug: data.name
+            .toLowerCase()
+            .replace(/[^a-z0-9]+/g, "-"),
+        })
+        .where(eq(agents.id, id))
+        .returning();
+
+      return updatedAgent;
+    }),
+
+
+
+
+
 //   delete: protectedProcedure
 //     .input(z.object({ id: z.string() }))
 //     .mutation(async ({ ctx, input }) => {
@@ -112,4 +193,17 @@ export const agentsRouter = createTRPCRouter({
 //         .returning();
 //       return row ?? null;
 //     }),
+
+
+
+
+
+
+
+
+
+
+
 });
+
+

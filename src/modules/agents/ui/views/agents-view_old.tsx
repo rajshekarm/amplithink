@@ -1,4 +1,3 @@
-// src/modules/agents/ui/views/AgentsView.tsx
 "use client";
 
 import * as React from "react";
