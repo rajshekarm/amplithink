@@ -88,19 +88,19 @@ export const agents = pgTable("agents", {
     .notNull()
     .references(() => user.id, { onDelete: "cascade" }),
 
-  slug: varchar("slug", { length: 60 }).notNull(),
-  role: agentRoleEnum("role").notNull(),
-  model: varchar("model", { length: 60 }).notNull(),
+  slug: varchar("slug", { length: 60 }).default("hello"),
+  role: agentRoleEnum("role").notNull().default("COACH"),
+  model: varchar("model", { length: 60 }).notNull().default("gpt-5"),
   instructions: text("instructions").notNull(),
   
   isEnabled: boolean("is_enabled").notNull().default(true),
-  voice: varchar("voice", { length: 50 }),
+  voice: varchar("voice", { length: 50 }).notNull().default("alloy"),
   avatarUrl: text("avatar_url"),
   description: text("description"),
-  configJson: jsonb("config_json"),
+  configJson: jsonb("config_json").$type<Record<string, unknown>>(),
 
-  createdAt: timestamp("created_at")
-    .notNull(),
-  updatedAt: timestamp("updated_at")
-    .notNull()
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+
+    updatedAt: timestamp("updated_at").notNull().defaultNow(),
+
 });

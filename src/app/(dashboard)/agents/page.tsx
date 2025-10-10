@@ -1,9 +1,18 @@
-import AgentsView from "@/modules/agents/ui/views/agents-view"
+import { AgentsListHeader } from "@/modules/agents/ui/components/agent-list-header"
+import { NewAgentDialog } from "@/modules/agents/ui/components/new-agent-dialog"  
 
-const Page = ()=> {
+import AgentsView from "@/modules/agents/ui/views/agents-view_old"
+import { getQueryClient, trpc } from "@/trpc/server"
+import { get } from "http"
 
+const Page = async ()=> {
 
-  return <AgentsView/>
+const queryClient = getQueryClient();
+void  queryClient.prefetchQuery(trpc.agents.getMany.queryOptions());
+  return <>
+  <AgentsListHeader/>
+  <AgentsView/>
+  </>
 }
 
 export default Page
