@@ -1,6 +1,6 @@
 import { db } from "@/db";
 import { agents } from "@/db/schema";
-import { and, desc, eq } from "drizzle-orm";
+import { and, desc, eq, getTableColumns, sql } from "drizzle-orm";
 import { z } from "zod";
 import { createTRPCRouter, baseProcedure, protectedProcedure } from "@/trpc/init";
 import { agentsInsertSchema } from "../schemas";
@@ -26,7 +26,11 @@ const UpdateAgentInput = CreateAgentInput.partial().extend({
 export const agentsRouter = createTRPCRouter({
   // Matches your screenshot: simple list
   getMany: baseProcedure.query(async () => {
-    const data = await db.select().from(agents).orderBy(desc(agents.createdAt));
+    const data = await db.select
+            ({...getTableColumns(agents),
+              meetingCount: sql<number>`5`})
+              .from(agents)
+              .orderBy(desc(agents.createdAt));
 
 
     await new Promise((resolve) => setTimeout(resolve, 500));
@@ -43,7 +47,8 @@ export const agentsRouter = createTRPCRouter({
     )
     .query(async ({ input }) => {
       const [existingAgent] = await db
-        .select()
+        .select({...getTableColumns(agents),
+              meetingCount: sql<number>`5`})
         .from(agents)
         .where(eq(agents.id, input.id));
 

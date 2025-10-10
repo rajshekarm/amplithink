@@ -13,8 +13,9 @@ import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { ChevronDown, ChevronUp, Plus, RefreshCw } from "lucide-react";
+import { ChevronDown, ChevronUp, Plus, RefreshCw, VideoIcon } from "lucide-react";
 import LoadingState from "@/components/loading-state";
+import { GeneratedAvatar } from "@/components/generated-avatar";
 
 type SortKey = "name" | "role" | "model" | "createdAt";
 
@@ -156,9 +157,18 @@ export default function AgentsView() {
             <Card key={a.id} className="hover:shadow-md transition-shadow">
               <CardHeader className="pb-2">
                 <div className="flex items-center justify-between">
-                  <CardTitle className="text-base">{a.name}</CardTitle>
+                  <CardTitle className="text-base">
+                    <GeneratedAvatar variant="botttsNeutral"
+                    seed={a.name} 
+                    className="size-6"/>
+                    {a.name}
+                  </CardTitle>
                   <Badge variant={a.isEnabled ? "default" : "secondary"}>
                     {a.isEnabled ? "Enabled" : "Disabled"}
+                  </Badge>
+                  <Badge variant="outline">
+                    <VideoIcon className="text-blue-700" />
+                    {a.type === "interviewer" ? "Interviewer" : "Coach"}
                   </Badge>
                 </div>
                 <div className="mt-1 text-xs text-muted-foreground">
