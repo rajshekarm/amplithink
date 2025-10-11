@@ -4,6 +4,7 @@ import { and, desc, eq, getTableColumns, sql } from "drizzle-orm";
 import { z } from "zod";
 import { createTRPCRouter, baseProcedure, protectedProcedure } from "@/trpc/init";
 import { agentsInsertSchema } from "../schemas";
+import { TRPCError } from "@trpc/server";
 
 const CreateAgentInput = z.object({
   name: z.string().min(2),
@@ -39,20 +40,30 @@ export const agentsRouter = createTRPCRouter({
   }),
 
 
-  getOne: baseProcedure
-    .input(
-      z.object({
-        id: z.string(),
+  getOne: protectedProcedure
+  .input(z.object({ id: z.string() }))
+  .query(async ({ input, ctx }) => {
+    const [existingAgent] = await db
+      .select({
+        meetingCount: sql<number>`5`, // TODO: Replace with actual COUNT
+        ...getTableColumns(agents),
       })
-    )
-    .query(async ({ input }) => {
-      const [existingAgent] = await db
-        .select({...getTableColumns(agents),
-              meetingCount: sql<number>`5`})
-        .from(agents)
-        .where(eq(agents.id, input.id));
+      .from(agents)
+      .where(
+        and(
+          eq(agents.id, input.id),
+          eq(agents.userId, ctx.session.user.id) // remove if not per-user
+        )
+      );
 
-      return existingAgent;
+    if (!existingAgent) {
+      throw new TRPCError({
+        code: "NOT_FOUND",
+        message: "Agent not found",
+      });
+    }
+
+    return existingAgent;
     }),
 //   // Safer list for the current user (use if you added userId)
 //   listMine: protectedProcedure.query(async ({ ctx }) => {
@@ -64,12 +75,31 @@ export const agentsRouter = createTRPCRouter({
 //     return data;
 //   }),
 
-  getById: baseProcedure
-    .input(z.object({ id: z.string() }))
-    .query(async ({ input }) => {
-      const [row] = await db.select().from(agents).where(eq(agents.id, input.id)).limit(1);
-      return row ?? null;
-    }),
+  getById:  protectedProcedure
+  .input(z.object({ id: z.string() }))
+  .query(async ({ input, ctx }) => {
+    const [existingAgent] = await db
+      .select({
+        meetingCount: sql<number>`5`, // TODO: Replace with actual COUNT
+        ...getTableColumns(agents),
+      })
+      .from(agents)
+      .where(
+        and(
+          eq(agents.id, input.id),
+          eq(agents.userId, ctx.session.user.id) // remove if not per-user
+        )
+      );
+
+    if (!existingAgent) {
+      throw new TRPCError({
+        code: "NOT_FOUND",
+        message: "Agent not found",
+      });
+    }
+
+    return existingAgent;
+  }),
 
 //   create: protectedProcedure
 //     .input(CreateAgentInput)

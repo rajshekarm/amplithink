@@ -16,12 +16,14 @@ import { ChevronDown, ChevronUp, Plus, RefreshCw } from "lucide-react";
 import LoadingState from "@/components/loading-state";
 import { DataTable } from "../components/data-table";
 import { columns } from "../components/columns";
+import { useRouter } from "next/navigation";
 
 type SortKey = "name" | "role" | "model" | "createdAt";
 
 export default function AgentsViewNew() {
   // Fetch agents using TRPC + React Query
   const trpc = useTRPC();
+   const router = useRouter();
   const { data, isLoading, error } = useQuery(trpc.agents.getMany.queryOptions());
 
 if (isLoading) return <div>Loading agents...</div>;
@@ -31,7 +33,9 @@ console.log("Agents data:", data); // now it’s defined
 
 return (
   <div className="p-4">
-    <DataTable data={data ?? []} columns={columns} />
+    <DataTable data={data ?? []} 
+                columns={columns}
+                onRowClick={(row)=> router.push(`/agents/${row.id}`)} />
   </div>
 );
   }

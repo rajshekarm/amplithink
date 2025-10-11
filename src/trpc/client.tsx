@@ -27,7 +27,7 @@ function getUrl() {
     return process.env.NEXT_PUBLIC_BASE_URL ?? 'http://localhost:3000';
   })();
   return `${base}/api/trpc`;
-}
+}``
 export function TRPCReactProvider(
   props: Readonly<{
     children: React.ReactNode;
