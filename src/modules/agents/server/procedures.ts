@@ -3,7 +3,7 @@ import { agents } from "@/db/schema";
 import { and, desc, eq, getTableColumns, sql } from "drizzle-orm";
 import { z } from "zod";
 import { createTRPCRouter, baseProcedure, protectedProcedure } from "@/trpc/init";
-import { agentsInsertSchema } from "../schemas";
+import { agentsInsertSchema, agentsUpdateSchema } from "../schemas";
 import { TRPCError } from "@trpc/server";
 
 const CreateAgentInput = z.object({
@@ -101,31 +101,6 @@ export const agentsRouter = createTRPCRouter({
     return existingAgent;
   }),
 
-//   create: protectedProcedure
-//     .input(CreateAgentInput)
-//     .mutation(async ({ ctx, input }) => {
-//       const [row] = await db
-//         .insert(agents)
-//         .values({
-//           // id is defaulted by nanoid/uuid in your schema
-//           userId: ctx.session.user.id, // remove if you don’t keep per-user ownership
-//           name: input.name,
-//           slug: input.slug,
-//           role: input.role,
-//           model: input.model,
-//           instructions: input.instructions,
-//           temperature: String(input.temperature), // numeric column
-//           isEnabled: input.isEnabled,
-//           voice: input.voice,
-//           avatarUrl: input.avatarUrl,
-//           description: input.description,
-//           configJson: input.configJson as any,
-//         })
-//         .returning();
-//       return row;
-//     }),
-
-
 
 create: protectedProcedure
   .input(agentsInsertSchema)
@@ -147,8 +122,38 @@ create: protectedProcedure
 
 
 
+update : protectedProcedure
+  .input(agentsUpdateSchema)
+  .mutation(async ({ ctx, input }) => {
+    const [updatedAgent] = await db
+      .update(agents)
+      .set(input)
+      .where(
+        and(
+          eq(agents.id, input.id),
+          eq(agents.userId, ctx.session.user.id)
+        )
+      )
+      .returning();
 
+    return updatedAgent;
+  }),
 
+remove: protectedProcedure
+  .input(z.object({ id: z.string() }))
+  .mutation(async ({ ctx, input }) => {
+    const [removedAgent] = await db
+      .delete(agents)
+      .where(
+        and(
+          eq(agents.id, input.id),
+          eq(agents.userId, ctx.session.user.id)
+        )
+      )
+      .returning();
+
+    return removedAgent;
+  }),
 
 
 
@@ -191,29 +196,29 @@ create: protectedProcedure
 
 
 
-// UPDATE
-  update: protectedProcedure
-    .input(
-      agentsInsertSchema.extend({
-        id: z.string().uuid(),
-      })
-    )
-    .mutation(async ({ input, ctx }) => {
-      const { id, ...data } = input;
+// // UPDATE
+//   update: protectedProcedure
+//     .input(
+//       agentsInsertSchema.extend({
+//         id: z.string().uuid(),
+//       })
+//     )
+//     .mutation(async ({ input, ctx }) => {
+//       const { id, ...data } = input;
 
-      const [updatedAgent] = await db
-        .update(agents)
-        .set({
-          ...data,
-          slug: data.name
-            .toLowerCase()
-            .replace(/[^a-z0-9]+/g, "-"),
-        })
-        .where(eq(agents.id, id))
-        .returning();
+//       const [updatedAgent] = await db
+//         .update(agents)
+//         .set({
+//           ...data,
+//           slug: data.name
+//             .toLowerCase()
+//             .replace(/[^a-z0-9]+/g, "-"),
+//         })
+//         .where(eq(agents.id, id))
+//         .returning();
 
-      return updatedAgent;
-    }),
+//       return updatedAgent;
+//     }),
 
 
 

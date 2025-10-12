@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTRPC } from "@/trpc/client";
 import {
   Dialog,
@@ -11,11 +11,14 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import {Loader2, Pencil, Trash, VideoIcon } from "lucide-react";
+import {Edit, Loader2, Pencil, Trash, VideoIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { AgentIdViewHeader } from "../components/agent-id-view-header";
 import { GeneratedAvatar } from "@/components/generated-avatar";
 import { Badge } from "@/components/ui/badge";
+import { toast } from "sonner";
+import { EditAgentDialog } from "../components/edit-agent-dialog";
+import { set } from "zod";
 //import { AgentForm } from "../components/agent-form";
 //import { useToast } from "@/components/ui/use-toast";
 
@@ -25,29 +28,62 @@ interface Props {
 //   onClose: () => void;
 }
 
+
+
+
 export const AgentIdView = ({ agentId }: Props) => {
   const trpc = useTRPC();
-  
-  //const { toast } = useToast();
+  const router = useRouter();
+  const queryClient = useQueryClient();
+
   const [isEditing, setIsEditing] = useState(false);
+
+
+
+  const removeAgent = useMutation(
+    trpc.agents.remove.mutationOptions({
+      onSuccess: async () => {
+        // Refresh agents list
+        await queryClient.invalidateQueries(trpc.agents.getMany.queryOptions({}));
+        toast.success("Agent deleted successfully");
+        router.push("/agents"); // Redirect after delete
+      },
+      onError: (error) => {
+        toast.error(error.message);
+      },
+    })
+  );
+
+  // ✏️ Update agent mutation
+const updateAgent = useMutation(
+  trpc.agents.update.mutationOptions({
+    onSuccess: async () => {
+     await queryClient.invalidateQueries(trpc.agents.getMany.queryOptions());
+      toast.success("Agent updated successfully");
+    },
+    onError: (error) => {
+      toast.error(error.message);
+    },
+  })
+);
+
+  
+  const editHandler = () => {
+    setIsEditing(true);
+    router.push(`/agents/${agentId}/edit`);
+    // Open edit dialog or navigate to edit page    
+   // updateAgent.mutate({ id: agentId, name: "Updated Agent Name", instructions: "Updated instructions" });
+  }
+  const removeHandler = (agentId: string) => {
+    if (confirm("Are you sure you want to delete this agent?")) {
+      removeAgent.mutate({ id: agentId });
+      
+    }
+  }
 
   const { data, isLoading, isError } = useQuery(
     trpc.agents.getOne.queryOptions({ id: agentId })
   );
-
-//   const updateMutation = trpc.agents.update.useMutation({
-//     onSuccess: () => {
-//       toast({ title: "Agent updated successfully" });
-//       setIsEditing(false);
-//     },
-//   });
-
-//   const deleteMutation = trpc.agents.remove.useMutation({
-//     onSuccess: () => {
-//       toast({ title: "Agent deleted" });
-//       onClose();
-//     },
-//   });
 
    if (isLoading) {
     return (
@@ -63,14 +99,20 @@ export const AgentIdView = ({ agentId }: Props) => {
 
   return (
     <div className="flex flex-col gap-6">
+      <EditAgentDialog
+        open={isEditing}
+        onOpenChange={setIsEditing}
+        initialValues={data}
+      />
+      
       {/* Header */}
       <AgentIdViewHeader
         agentId={agentId}
         agentName={data.name}
-        onEdit={() => console.log("Edit clicked for agent:", agentId)}
-        onRemove={() => console.log("Delete clicked for agent:", agentId)}
+        onEdit={() => setIsEditing(true)}
+        onRemove={() => removeHandler(agentId)}
       />
-
+      
       {/* Agent Info Card */}
       <div className="bg-white rounded-lg border px-4 py-6 flex flex-col gap-y-5">
         {/* Avatar and Name */}
@@ -100,54 +142,5 @@ export const AgentIdView = ({ agentId }: Props) => {
         </div>
       </div>
     </div>
-  );
-//       <Dialog open={open} onOpenChange={onClose}>
-//         <DialogContent className="sm:max-w-3xl">
-//           <DialogHeader>     
-//             <DialogTitle>Agent Details</DialogTitle>
-//           </DialogHeader>
-//           <div className="mt-4">
-//             {agent ? (
-//               isEditing ? (
-//                 <AgentForm
-//                   initialValues={agent}
-//                   onSuccess={() => { setIsEditing(false); onClose(); }}
-//                   onCancel={() => setIsEditing(false)}
-//                 />   
-//               ) : (
-//                 <div>
-//                   <p>
-//                     <strong>Name:</strong> {agent.name}  
-//                   </p>
-//                   <div className="mt-4 flex space-x-2">
-//                     <Button
-//                       variant="outline"
-//                       onClick={() => setIsEditing(true)}
-//                       disabled={updateMutation.isPending || deleteMutation.isPending}
-//                     >
-//                       {updateMutation.isPending ? (
-//                         <Loader2 className="animate-spin h-4 w-4" />
-//                       ) : (<Pencil className="h-4 w-4" />)}
-//                       Edit
-//                     </Button>    
-//                     <Button
-//                       variant="destructive"
-//                       onClick={() => deleteMutation.mutate({ id: agent.id })}        
-//                       disabled={updateMutation.isPending || deleteMutation.isPending}
-//                     >
-//                       {deleteMutation.isPending ? (
-//                         <Loader2 className="animate-spin h-4 w-4" />
-//                       ) : (
-//                         <Trash className="h-4 w-4" />        
-//                       )}
-//                       Delete
-//                     </Button>
-//                   </div>
-//                 </div>
-//               )
-//           </div>
-//         </DialogContent>
-//       </Dialog>
-        
-      
+  );  
 };
