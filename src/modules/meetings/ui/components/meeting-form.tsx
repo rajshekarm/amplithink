@@ -15,80 +15,90 @@ import {
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
-import { agentsInsertSchema } from "../../schema";
-import { AgentGetOne } from "../../types";
+import { meetingsInsertSchema } from "../../schema";
+import { MeetingGetOne } from "../../types";
 import { GeneratedAvatar } from "@/components/generated-avatar";
 
-interface AgentFormProps {
-  onSuccess?: () => void;
+interface MeetingFormProps {
+  onSuccess?: (id?: string) => void;
   onCancel?: () => void;
-  initialValues?: AgentGetOne;
+  initialValues?: MeetingGetOne;
 }
 
-export const AgentCreateForm = ({
+export const MeetingForm = ({
   onSuccess,
   onCancel,
   initialValues,
-}: AgentFormProps) => {
+}: MeetingFormProps) => {
   const trpc = useTRPC();
   const queryClient = useQueryClient();
+ 
+const form = useForm<z.infer<typeof meetingsInsertSchema>>({
+  resolver: zodResolver(meetingsInsertSchema),
+  defaultValues: initialValues ?? {
+    name: "",
+    title: "",
+    userId: "",
+    agentId: "",
+  },
+});
 
-  const form = useForm<z.infer<typeof agentsInsertSchema>>({
-    resolver: zodResolver(agentsInsertSchema),
-    defaultValues: initialValues ?? {
-      name: "",
-      instructions: "",
-      
-    },
-  });
 
-  const createAgent = useMutation(
-    trpc.agents.create.mutationOptions({
+  const createMeeting = useMutation(
+    trpc.meetings.create.mutationOptions({
       onSuccess: () => {
-        queryClient.invalidateQueries(trpc.agents.getMany.queryOptions());
+        queryClient.invalidateQueries(trpc.meetings.getMany.queryOptions({}));
+        console.log("Meeting created");
         onSuccess?.();
       },
       onError: (err) => {
-        console.error("Failed to create agent:", err);
+        console.error("Failed to create meeting:", err);
       },
     })
   );
 
-  const updateAgent = useMutation(
-    trpc.agents.update.mutationOptions({
+  const updateMeeting = useMutation(
+    trpc.meetings.update.mutationOptions({
       onSuccess: async() => {
-        queryClient.invalidateQueries(trpc.agents.getMany.queryOptions());
+        queryClient.invalidateQueries(trpc.meetings.getMany.queryOptions({}));
         queryClient.invalidateQueries(
-          trpc.agents.getOne.queryOptions({ id: initialValues?.id ?? "" })
+          trpc.meetings.getOne.queryOptions({ id: initialValues?.id ?? "" })
         );
         if(initialValues?.id) {
           await queryClient.invalidateQueries(
-            trpc.agents.getOne.queryOptions({ id: initialValues.id })
+            trpc.meetings.getOne.queryOptions({ id: initialValues.id })
           );
         }
-        onSuccess?.();
+        // onSuccess?.();
       },
       onError: (err:any) => {
-        console.error("Failed to update agent:", err);
+        console.error("Failed to update meeting:", err);
       },
     })
   );
-  
-  const isPending = createAgent.isPending || updateAgent.isPending;
+
+       
+  const isPending = createMeeting.isPending || updateMeeting.isPending;
   const isEdit = !!initialValues?.id;
 
-  const onSubmit = (data: z.infer<typeof agentsInsertSchema>) => {
+  const onSubmit = (data: z.infer<typeof meetingsInsertSchema>) => {
+    console.log("Form Data:", data);
     if (isEdit) {
-      updateAgent.mutate({ id: initialValues!.id, ...data });
+      updateMeeting.mutate({ id: initialValues!.id, ...data });
     } else {
-      createAgent.mutate(data);
+      createMeeting.mutate({...data });
+
     }
   };
+
 
   return (
     <Form {...form}>
       <form
-        onSubmit={form.handleSubmit(onSubmit)}
+       onSubmit={form.handleSubmit(
+    onSubmit,
+    (errors) => console.log("Validation errors:", errors)
+  )}
         className="space-y-4"
       >
         <GeneratedAvatar
@@ -105,19 +115,19 @@ export const AgentCreateForm = ({
             <FormItem>
               <FormLabel>Name</FormLabel>
               <FormControl>
-                <Input {...field} placeholder="Enter agent name" />
+                <Input {...field} placeholder="Enter Meeting name" />
               </FormControl>
             </FormItem>
           )}
         />
 
-        {/* Instructions Field */}
+        {/* Title Field */}
         <FormField
-          name="instructions"
+          name="title"
           control={form.control}
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Instructions</FormLabel>
+              <FormLabel>Title</FormLabel>
               <FormControl>
                 <Textarea
                   {...field}
@@ -127,6 +137,36 @@ export const AgentCreateForm = ({
             </FormItem>
           )}
         />
+
+
+        {/* Name Field */}
+        <FormField
+          name="userId"
+          control={form.control}
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>User</FormLabel>
+              <FormControl>
+                <Input {...field} placeholder="Enter Meeting name" />
+              </FormControl>
+            </FormItem>
+          )}
+        />
+
+        {/* Name Field */}
+        <FormField
+          name="agentId"
+          control={form.control}
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Agent</FormLabel>
+              <FormControl>
+                <Input {...field} placeholder="Enter Meeting name" />
+              </FormControl>
+            </FormItem>
+          )}
+        />
+
 
         <div className="flex justify-end gap-2 pt-2">
           {onCancel && (
