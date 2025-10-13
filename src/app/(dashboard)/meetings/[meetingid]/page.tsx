@@ -1,11 +1,12 @@
+import MeetingIdView from "@/modules/meetings/ui/views/meeting-id-view";
 
 interface Props {
-  params: { agentId: string };
+  params: { meetingid: string };
 }
     
-const Page = ({ params }: Props) => {
+const Page = async ({ params }: Props) => {
 
-    const { agentId } = params;
-  return <div>Meeting Page</div>;
+    const { meetingid } = await params;
+  return <div><MeetingIdView meetingId={meetingid} /></div>;
 }
 export default Page;
