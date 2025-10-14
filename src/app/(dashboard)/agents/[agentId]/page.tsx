@@ -6,7 +6,7 @@ interface Props {
 
 const Page = async ({ params }: Props) => {
 
-    console.log("AgentIdView page rendering for agentId:");
+    console.log("AgentIdView page rendering for agentId:" + params.agentId);
   const { agentId } = await params;
 
   
