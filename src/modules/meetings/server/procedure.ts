@@ -7,6 +7,8 @@ import { meetingsInsertSchema, meetingsUpdateSchema } from "../schema";
 import { TRPCError } from "@trpc/server";
 import { agentsUpdateSchema } from "@/modules/agents/schema";
 import { DEFAULT_PAGE, DEFAULT_PAGE_SIZE, MAX_PAGE_SIZE, MIN_PAGE_SIZE } from "@/constants";
+import { generateAvatarUri } from "@/lib/avatar";
+import { streamVideo } from "@/lib/stream-video";
 
 const CreateMeetingInput = z.object({
   name: z.string().min(2),
@@ -27,6 +29,36 @@ const UpdateMeetingInput = CreateMeetingInput.partial().extend({
 });
 
 export const meetingsRouter = createTRPCRouter({
+
+    generateToken: protectedProcedure.mutation(async ({ ctx }) => {
+    // 1️⃣ Register user in Stream
+    await streamVideo.upsertUsers([
+      {
+        id: ctx.session.user.id,
+        name: ctx.session.user.name,
+        role: "admin",
+        image:
+          ctx.session.user.image ??
+          generateAvatarUri({ seed: ctx.session.user.name, variant: "initials" }),
+      },
+    ]);
+
+    // 2️⃣ Generate Stream token
+    const expirationTime = Math.floor(Date.now() / 1000) + 3600; // 1 hour
+    const issuedAt = Math.floor(Date.now() / 1000) - 60;
+
+    const token = streamVideo.generateUserToken({
+      user_id: ctx.session.user.id,
+      exp: expirationTime,
+      validity_in_seconds: issuedAt,
+    });
+
+    // 3️⃣ Return token to client
+    return token;
+  }),
+
+
+
   // Matches your screenshot: simple list
   getMany: baseProcedure
     .input(
@@ -84,9 +116,12 @@ export const meetingsRouter = createTRPCRouter({
     };
   }),
 
+
+  
   getOne: protectedProcedure
   .input(z.object({ id: z.string() }))
   .query(async ({ input, ctx }) => {
+    console.log("Fetching meeting with ID:", input);
     const [existingMeeting] = await db
       .select({
         meetingCount: sql<number>`5`, // TODO: Replace with actual COUNT
@@ -95,8 +130,8 @@ export const meetingsRouter = createTRPCRouter({
       .from(meetings)
       .where(
         and(
-          eq(agents.id, input.id),
-          eq(agents.userId, ctx.session.user.id) // remove if not per-user
+          eq(meetings.id, input.id),
+          eq(meetings.userId, ctx.session.user.id) // remove if not per-user
         )
       );
 
@@ -113,27 +148,27 @@ export const meetingsRouter = createTRPCRouter({
   getById:  protectedProcedure
   .input(z.object({ id: z.string() }))
   .query(async ({ input, ctx }) => {
-    const [existingAgent] = await db
+    const [existingMeeting] = await db
       .select({
         meetingCount: sql<number>`5`, // TODO: Replace with actual COUNT
-        ...getTableColumns(agents),
+        ...getTableColumns(meetings),
       })
-      .from(agents)
+      .from(meetings)
       .where(
         and(
-          eq(agents.id, input.id),
-          eq(agents.userId, ctx.session.user.id) // remove if not per-user
+          eq(meetings.id, input.id),
+          eq(meetings.userId, ctx.session.user.id) // remove if not per-user
         )
       );
 
-    if (!existingAgent) {
+    if (!existingMeeting) {
       throw new TRPCError({
         code: "NOT_FOUND",
-        message: "Agent not found",
+        message: "Meeting not found",
       });
     }
 
-    return existingAgent;
+    return existingMeeting;
   }),
 
 //Create Meeting
@@ -147,6 +182,85 @@ create: protectedProcedure
         ...input,
       })
       .returning();
+
+  
+  
+  
+  
+  const call = streamVideo.video.call("default", createdMeeting.id);
+
+  await call.create({
+  data: {
+    created_by_id: ctx.session.user.id,
+    custom: {
+      meetingId: createdMeeting.id,
+      meetingName: createdMeeting.name,
+    },
+  },
+  settings_override: {
+    transcription: {
+      language: "en",
+      mode: "auto-on",
+      closed_caption_mode: "auto-on",
+    },
+    recording: {
+      mode: "auto-on",
+      quality: "1080p",
+    },
+  },
+});
+
+//fetch existing agent the newly created meeting uses
+const [existingAgent] = await db
+.select()
+.from(agents)
+.where(
+  and(
+    eq(agents.id, createdMeeting.agentId),
+    // eq(agents.userId, ctx.session.user.id) // remove if not per-user
+  )
+);
+
+if(!existingAgent){
+  throw new TRPCError({
+    code: "NOT_FOUND",
+    message: "Associated agent not found",
+  });
+}
+
+//if agent exists and we need to make this agent a normal user so we need add them to stream as well so they can join the call
+await streamVideo.upsertUsers([
+  { 
+    id: existingAgent.id,
+    name: existingAgent.name,
+    role: "user",
+    image: existingAgent.avatarUrl ?? generateAvatarUri({ seed: existingAgent.name, variant: "botttsNeutral" }),
+  },
+]); 
+
+
+
+//later: update the meeting with agent's voice and avatar if not provided
+// if (existingAgent) {
+//   //update the meeting with agent's voice and avatar if not provided
+//   const updatedValues: Partial<typeof meetings.$inferInsert> = {};  
+//   if (!createdMeeting.voice && existingAgent.voice) {
+//     updatedValues.voice = existingAgent.voice;
+//   }
+//   if (!createdMeeting.avatarUrl && existingAgent.avatarUrl) {
+//     updatedValues.avatarUrl = existingAgent.avatarUrl;
+//   }  
+
+//   if (Object.keys(updatedValues).length > 0) {
+//     await db
+//       .update(meetings)
+//       .set(updatedValues)
+//       .where(eq(meetings.id, createdMeeting.id));
+//   } 
+// }
+
+
+
 
     return createdMeeting;
   }),

@@ -7,6 +7,7 @@ interface Props {
 const Page = async ({ params }: Props) => {
 
     const { meetingid } = await params;
+    console.log("MeetingIdView page rendering for meetingId:" + meetingid);
   return <div><MeetingIdView meetingId={meetingid} /></div>;
 }
 export default Page;

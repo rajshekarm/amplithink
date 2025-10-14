@@ -4,7 +4,7 @@ import { useState } from "react";
 import { PlusIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { NewMeetingDialog } from "./new-meeting-dialog";
-import { SearchFilter } from "./meetin-search-filters";
+import { SearchFilter } from "./meeting-search-filters";
 import { useMeetingsFilters } from "../../hooks/use-meetings-filters";
 // import { NewAgentDialog } from "./new-agent-dialog";
 
